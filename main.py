@@ -25,7 +25,7 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(50))
-    description = db.Column(db.Text)
+    # description = db.Column(db.Text)
 
 class Order(db.Model):
     __tablename__ = 'Orders'
@@ -46,7 +46,7 @@ def get_products():
             "name": p.name, 
             "price": p.price,
             "category": p.category,
-            "description": p.description
+            # "description": p.description
         } for p in products]), 200
     except Exception as e:
         return jsonify({"error": "Database connection failed", "details": str(e)}), 500
@@ -62,7 +62,7 @@ def get_product(product_id):
                 "name": product.name, 
                 "price": product.price,
                 "category": product.category,
-                "description": product.description
+                # "description": product.description
             }), 200
         return jsonify({"error": "Product not found"}), 404
     except Exception as e:
