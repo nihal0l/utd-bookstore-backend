@@ -36,20 +36,29 @@ class Order(db.Model):
     
 # --- ROUTES ---
 
-# 1. GET ALL PRODUCTS
+# 1. GET ALL PRODUCTS (Robust Category Filter)
 @app.route('/products', methods=['GET'])
 def get_products():
     try:
-        products = Product.query.all()
+        category_query = request.args.get('category')
+
+        if category_query:
+            # .ilike() makes it case-insensitive (Graduation == graduation)
+            # The '%' signs allow for partial matches
+            products = Product.query.filter(Product.category.ilike(f"{category_query}")).all()
+        else:
+            products = Product.query.all()
+
         return jsonify([{
             "id": p.id, 
             "name": p.name, 
             "price": p.price,
-            "category": p.category,
-            # "description": p.description
+            "category": p.category
+            # "description": product.description
         } for p in products]), 200
+        
     except Exception as e:
-        return jsonify({"error": "Database connection failed", "details": str(e)}), 500
+        return jsonify({"error": "Query failed", "details": str(e)}), 500
 
 # 2. GET SINGLE PRODUCT
 @app.route('/product/<int:product_id>', methods=['GET'])
@@ -61,7 +70,7 @@ def get_product(product_id):
                 "id": product.id, 
                 "name": product.name, 
                 "price": product.price,
-                "category": product.category,
+                "category": product.category
                 # "description": product.description
             }), 200
         return jsonify({"error": "Product not found"}), 404
