@@ -21,7 +21,6 @@ db = SQLAlchemy(app)
 
 class Product(db.Model):
     __tablename__ = 'Products'
-    # Field names must match your "DESCRIBE Products" screenshot exactly
     ID = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String(150), nullable=True)
     Price = db.Column(db.Float, nullable=True)
@@ -30,11 +29,9 @@ class Product(db.Model):
 
 class Order(db.Model):
     __tablename__ = 'Orders'
-    # Field names must match your "DESCRIBE Orders" screenshot exactly
     OrderID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ProductID = db.Column(db.Integer, nullable=True)
     StudentName = db.Column(db.String(150), nullable=True)
-    # Timestamp is handled by the DB automatically based on your screenshot
 
 # --- ROUTES ---
 
