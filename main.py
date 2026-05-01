@@ -17,95 +17,67 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- DATABASE MODELS ---
+# --- DATABASE MODELS (Matched to your Screenshots) ---
 
 class Product(db.Model):
     __tablename__ = 'Products'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    category = db.Column(db.String(50))
-    # description = db.Column(db.Text)
+    # Field names must match your "DESCRIBE Products" screenshot exactly
+    ID = db.Column(db.Integer, primary_key=True)
+    Name = db.Column(db.String(150), nullable=True)
+    Price = db.Column(db.Float, nullable=True)
+    Category = db.Column(db.String(100), nullable=True)
+    ImageURL = db.Column(db.String(500), nullable=True)
 
 class Order(db.Model):
     __tablename__ = 'Orders'
-    id = db.Column(db.Integer, primary_key=True)
-    student_name = db.Column(db.String(100), nullable=False)
-    product_id = db.Column(db.Integer, nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    
+    # Field names must match your "DESCRIBE Orders" screenshot exactly
+    OrderID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    ProductID = db.Column(db.Integer, nullable=True)
+    StudentName = db.Column(db.String(150), nullable=True)
+    # Timestamp is handled by the DB automatically based on your screenshot
+
 # --- ROUTES ---
 
-# 1. GET ALL PRODUCTS (Robust Category Filter)
+# 1. GET ALL PRODUCTS
 @app.route('/products', methods=['GET'])
 def get_products():
     try:
         category_query = request.args.get('category')
-
         if category_query:
-            # .ilike() makes it case-insensitive (Graduation == graduation)
-            # The '%' signs allow for partial matches
-            products = Product.query.filter(Product.category.ilike(f"{category_query}")).all()
+            products = Product.query.filter(Product.Category.ilike(category_query)).all()
         else:
             products = Product.query.all()
 
         return jsonify([{
-            "id": p.id, 
-            "name": p.name, 
-            "price": p.price,
-            "category": p.category
-            # "description": product.description
+            "id": p.ID, 
+            "name": p.Name, 
+            "price": float(p.Price) if p.Price else 0,
+            "category": p.Category,
+            "image_url": p.ImageURL
         } for p in products]), 200
-        
     except Exception as e:
-        return jsonify({"error": "Query failed", "details": str(e)}), 500
+        return jsonify({"error": "Database error", "details": str(e)}), 500
 
-# 2. GET SINGLE PRODUCT
-@app.route('/product/<int:product_id>', methods=['GET'])
-def get_product(product_id):
-    try:
-        product = Product.query.get(product_id)
-        if product:
-            return jsonify({
-                "id": product.id, 
-                "name": product.name, 
-                "price": product.price,
-                "category": product.category
-                # "description": product.description
-            }), 200
-        return jsonify({"error": "Product not found"}), 404
-    except Exception as e:
-        return jsonify({"error": "Query failed", "details": str(e)}), 500
-
-# 3. POST NEW ORDER (Checkout)
+# 2. POST NEW ORDER (Checkout)
 @app.route('/order', methods=['POST'])
 def create_order():
     try:
         data = request.json
         
-        # Validation: Ensure required fields are present
-        if not data.get('student_name') or not data.get('product_id'):
-            return jsonify({"error": "Missing student_name or product_id"}), 400
-
+        # Mapping frontend keys to DB Column names
         new_order = Order(
-            student_name=data.get('student_name'),
-            product_id=data.get('product_id'),
-            quantity=data.get('quantity', 1)
+            StudentName=data.get('student_name'),
+            ProductID=data.get('product_id')
         )
         
         db.session.add(new_order)
         db.session.commit()
         
-        return jsonify({
-            "status": "Success", 
-            "message": "Order placed!", 
-            "order_id": new_order.id
-        }), 201
+        return jsonify({"status": "Success", "order_id": new_order.OrderID}), 201
     except Exception as e:
-        db.session.rollback() # Reverts changes if something goes wrong
-        return jsonify({"error": "Failed to place order", "details": str(e)}), 500
+        db.session.rollback()
+        return jsonify({"error": "Order failed", "details": str(e)}), 500
 
-# --- RUN THE APP ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
